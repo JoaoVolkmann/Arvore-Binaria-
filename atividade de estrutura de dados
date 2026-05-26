@@ -1,0 +1,219 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+// ─── Estrutura do nó ───────────────────────────────
+typedef struct No {
+    int valor;
+    struct No *esq;
+    struct No *dir;
+} No;
+
+// ═══════════════════════════════════════════════════
+//  INSERÇÃO
+// ═══════════════════════════════════════════════════
+
+No *novoNo(int valor) {
+    No *n = (No *)malloc(sizeof(No));
+    n->valor = valor;
+    n->esq   = NULL;
+    n->dir   = NULL;
+    return n;
+}
+
+No *inserir(No *raiz, int valor) {
+    if (raiz == NULL)
+        return novoNo(valor);
+    if (valor < raiz->valor)
+        raiz->esq = inserir(raiz->esq, valor);
+    else if (valor > raiz->valor)
+        raiz->dir = inserir(raiz->dir, valor);
+    return raiz;
+}
+
+// ═══════════════════════════════════════════════════
+//  BUSCA
+// ═══════════════════════════════════════════════════
+
+No *buscar(No *raiz, int valor) {
+    if (raiz == NULL || raiz->valor == valor)
+        return raiz;
+    if (valor < raiz->valor)
+        return buscar(raiz->esq, valor);
+    return buscar(raiz->dir, valor);
+}
+
+
+
+static No *menorNo(No *no) {
+
+    while (no->esq != NULL)
+        no = no->esq;
+    return no;
+}
+
+No *remover(No *raiz, int valor) {
+    
+    if (raiz == NULL) {
+        printf("  [busca] Valor %d não encontrado na árvore.\n", valor);
+        return NULL;
+    }
+
+    if (valor < raiz->valor) {
+        
+        printf("  [busca] %d < %d → vai para esquerda\n", valor, raiz->valor);
+        raiz->esq = remover(raiz->esq, valor);
+
+    } else if (valor > raiz->valor) {
+        
+        printf("  [busca] %d > %d → vai para direita\n", valor, raiz->valor);
+        raiz->dir = remover(raiz->dir, valor);
+
+    } else {
+        
+        printf("  [busca] Nó %d encontrado!\n", valor);
+
+        if (raiz->esq == NULL) {
+            No *tmp = raiz->dir;
+            printf("  [remoção] Caso A — sem filho esquerdo. Substitui por filho direito.\n");
+            free(raiz);
+            return tmp;
+        }
+
+        
+        if (raiz->dir == NULL) {
+            No *tmp = raiz->esq;
+            printf("  [remoção] Caso B — sem filho direito. Substitui por filho esquerdo.\n");
+            free(raiz);
+            return tmp;
+        }
+
+       
+        printf("  [remoção] Caso C — dois filhos.\n");
+        No *suc = menorNo(raiz->dir);
+        printf("  [busca sucessor] Menor da subárvore direita: %d\n", suc->valor);
+
+       
+        printf("  [inserção lógica] Copia valor %d para o nó atual.\n", suc->valor);
+        raiz->valor = suc->valor;
+
+       
+        printf("  [remoção recursiva] Remove o sucessor %d da subárvore direita.\n", suc->valor);
+        raiz->dir = remover(raiz->dir, suc->valor);
+    }
+
+    return raiz;
+}
+
+// ═══════════════════════════════════════════════════
+//  TRAVESSIAS
+// ═══════════════════════════════════════════════════
+
+void emOrdem(No *raiz) {
+    if (raiz == NULL) return;
+    emOrdem(raiz->esq);
+    printf("%d ", raiz->valor);
+    emOrdem(raiz->dir);
+}
+
+void preOrdem(No *raiz) {
+    if (raiz == NULL) return;
+    printf("%d ", raiz->valor);
+    preOrdem(raiz->esq);
+    preOrdem(raiz->dir);
+}
+
+void posOrdem(No *raiz) {
+    if (raiz == NULL) return;
+    posOrdem(raiz->esq);
+    posOrdem(raiz->dir);
+    printf("%d ", raiz->valor);
+}
+
+// ═══════════════════════════════════════════════════
+//  IMPRESSÃO VISUAL
+// ═══════════════════════════════════════════════════
+
+void imprimirArvore(No *raiz, int nivel, char lado) {
+    if (raiz == NULL) return;
+    for (int i = 0; i < nivel - 1; i++) printf("│   ");
+    if (nivel > 0) printf("├── ");
+    printf("[%c] %d\n", lado, raiz->valor);
+    imprimirArvore(raiz->esq, nivel + 1, 'E');
+    imprimirArvore(raiz->dir, nivel + 1, 'D');
+}
+
+int altura(No *raiz) {
+    if (raiz == NULL) return 0;
+    int he = altura(raiz->esq), hd = altura(raiz->dir);
+    return 1 + (he > hd ? he : hd);
+}
+
+void liberar(No *raiz) {
+    if (raiz == NULL) return;
+    liberar(raiz->esq);
+    liberar(raiz->dir);
+    free(raiz);
+}
+
+// ═══════════════════════════════════════════════════
+//  MAIN
+// ═══════════════════════════════════════════════════
+
+int main(void) {
+    No *raiz = NULL;
+
+    printf("╔══════════════════════════════════════╗\n");
+    printf("║    ÁRVORE BINÁRIA DE BUSCA — BST     ║\n");
+    printf("╚══════════════════════════════════════╝\n\n");
+
+    // ── Inserções ──────────────────────────────────
+    printf("── INSERINDO VALORES ──────────────────\n");
+    int vals[] = {50, 30, 70, 20, 40, 60, 80, 10, 25, 35, 45};
+    int n = sizeof(vals) / sizeof(vals[0]);
+    for (int i = 0; i < n; i++) {
+        raiz = inserir(raiz, vals[i]);
+        printf("  Inserido: %d\n", vals[i]);
+    }
+
+    printf("\nEstrutura:\n");
+    imprimirArvore(raiz, 0, 'R');
+    printf("Altura: %d\n", altura(raiz));
+
+    printf("\nEm-ordem  : "); emOrdem(raiz);
+    printf("\nPré-ordem : "); preOrdem(raiz);
+    printf("\nPós-ordem : "); posOrdem(raiz);
+    printf("\n");
+
+    // ── Busca isolada ──────────────────────────────
+    printf("\n── BUSCA ──────────────────────────────\n");
+    int alvos[] = {40, 25, 99};
+    for (int i = 0; i < 3; i++) {
+        No *r = buscar(raiz, alvos[i]);
+        printf("  Busca(%d): %s\n", alvos[i], r ? "ENCONTRADO" : "NÃO ENCONTRADO");
+    }
+
+    // ── Remoção: Caso A — nó folha ─────────────────
+    printf("\n── REMOVENDO 10 (folha — Caso A) ──────\n");
+    raiz = remover(raiz, 10);
+    printf("Em-ordem: "); emOrdem(raiz); printf("\n");
+    imprimirArvore(raiz, 0, 'R');
+
+    // ── Remoção: Caso B — um filho ─────────────────
+    printf("\n── REMOVENDO 20 (um filho — Caso B) ───\n");
+    raiz = remover(raiz, 20);
+    printf("Em-ordem: "); emOrdem(raiz); printf("\n");
+    imprimirArvore(raiz, 0, 'R');
+
+    // ── Remoção: Caso C — dois filhos ──────────────
+    printf("\n── REMOVENDO 30 (dois filhos — Caso C) \n");
+    raiz = remover(raiz, 30);
+    printf("Em-ordem: "); emOrdem(raiz); printf("\n");
+    imprimirArvore(raiz, 0, 'R');
+
+    // ── Remoção: valor inexistente ──────────────────
+    printf("\n── REMOVENDO 99 (inexistente) ──────────\n");
+    raiz = remover(raiz, 99);
+
+    liberar(raiz);
+    return 0;
+}
